@@ -6,7 +6,6 @@ using UnityEditor;
 //Version 1.65, added scroll for array members and some cosmetic branding changes as I wanted to figure out how to do them
 //added remove-add functionality within 1.65 as I forgot that I had that in my own notes. 
 //future features will include member reordering, size forcing, further parameters to textures, normal map array settings. 
-
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -142,6 +141,8 @@ public class TextureArrayWizard : EditorWindow
         for (int i = 0; i < size; i++)
         {
             textures[i] = new Texture2D(textureWidth, textureHeight, textureFormat, false);
+            textures[i].filterMode = FilterMode.Point; // point filter... we'll deal with that later... just need to avoid mips rn 
+            textures[i].wrapMode = TextureWrapMode.Repeat;
         }
 
         EditorUtility.SetDirty(this);
@@ -169,9 +170,11 @@ public class TextureArrayWizard : EditorWindow
         if (importer != null)
         {
             importer.isReadable = true;
+            importer.mipmapEnabled = false; // Ensure mipmaps are disabled
             AssetDatabase.ImportAsset(path);
         }
     }
+
 
     private void AddTexture()
     {
@@ -218,6 +221,7 @@ public class TextureArrayWizard : EditorWindow
 
 
 }
+
 
 
 
