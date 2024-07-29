@@ -4,7 +4,13 @@ using UnityEngine;
 using UnityEditor;
 //By C.S. Woodward in 2022, prepared for public use in 2024. 
 //Version 1.65, added scroll for array members and some cosmetic branding changes as I wanted to figure out how to do them
+//added remove-add functionality within 1.65 as I forgot that I had that in my own notes. 
 //future features will include member reordering, size forcing, further parameters to textures, normal map array settings. 
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEditor;
 
 public class TextureArrayWizard : EditorWindow
 {
@@ -26,7 +32,7 @@ public class TextureArrayWizard : EditorWindow
 
     private void OnEnable()
     {
-        // Load the header and title images from the Assets folder
+        
         bigShoeHeader = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Editor/BigShoeTools/HeaderForTextureArrayWizard.png");
         parameterImg = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Editor/BigShoeTools/texturearrayparameters.png");
     }
@@ -37,7 +43,6 @@ public class TextureArrayWizard : EditorWindow
         imageStyle.margin = new RectOffset(0, 0, 0, 0);
         imageStyle.padding = new RectOffset(0, 0, 0, 0);
 
-        // set up in an if just in case you, the knucklehead end-user decide to not keep the shit where it needs to be. 
         if (bigShoeHeader != null)
         {
             GUILayout.Box(bigShoeHeader, imageStyle);
@@ -47,11 +52,12 @@ public class TextureArrayWizard : EditorWindow
             GUILayout.Box(parameterImg, imageStyle);
         }
 
-        // texture properties... 
+        EditorGUI.BeginDisabledGroup(textureArray != null);
         size = EditorGUILayout.IntField("Array Size", size);
         textureWidth = EditorGUILayout.IntField("Texture Width", textureWidth);
         textureHeight = EditorGUILayout.IntField("Texture Height", textureHeight);
         textureFormat = (TextureFormat)EditorGUILayout.EnumPopup("Texture Format", textureFormat);
+        EditorGUI.EndDisabledGroup();
 
         GUI.backgroundColor = new Color32(48, 211, 223, 255);
         if (GUILayout.Button("Create New Texture2DArray"))
@@ -77,7 +83,6 @@ public class TextureArrayWizard : EditorWindow
                 textures = new Texture2D[size];
                 for (int i = 0; i < size; i++)
                 {
-                    //do a copy from texture array... 
                     textures[i] = new Texture2D(textureWidth, textureHeight, textureFormat, false);
                     Graphics.CopyTexture(textureArray, i, textures[i], 0);
                 }
@@ -90,6 +95,17 @@ public class TextureArrayWizard : EditorWindow
             {
                 textures = new Texture2D[size];
             }
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Add a Texture Slot"))
+            {
+                AddTexture();
+            }
+            if (GUILayout.Button("Remove a Texture Slot"))
+            {
+                RemoveTexture();
+            }
+            GUILayout.EndHorizontal();
 
             scrollPos = EditorGUILayout.BeginScrollView(scrollPos, GUILayout.Height(200));
             for (int i = 0; i < size; i++)
@@ -128,7 +144,6 @@ public class TextureArrayWizard : EditorWindow
             textures[i] = new Texture2D(textureWidth, textureHeight, textureFormat, false);
         }
 
-        // reset with new tex array... 
         EditorUtility.SetDirty(this);
         Repaint();
     }
@@ -147,7 +162,6 @@ public class TextureArrayWizard : EditorWindow
         AssetDatabase.SaveAssets();
     }
 
-    //force readable because I know knuckleheads be just dumping in texture willy nilly... 
     private void SetTextureReadable(Texture2D texture)
     {
         string path = AssetDatabase.GetAssetPath(texture);
@@ -159,6 +173,36 @@ public class TextureArrayWizard : EditorWindow
         }
     }
 
+    private void AddTexture()
+    {
+        size++;
+        System.Array.Resize(ref textures, size);
+        textures[size - 1] = new Texture2D(textureWidth, textureHeight, textureFormat, false);
+        ResizeTextureArray();
+    }
+
+    private void RemoveTexture()
+    {
+        if (size > 1)
+        {
+            size--;
+            System.Array.Resize(ref textures, size);
+            ResizeTextureArray();
+        }
+    }
+
+    private void ResizeTextureArray()
+    {
+        Texture2DArray newTextureArray = new Texture2DArray(textureWidth, textureHeight, size, textureFormat, false);
+        for (int i = 0; i < Mathf.Min(textureArray.depth, size); i++)
+        {
+            Graphics.CopyTexture(textureArray, i, newTextureArray, i);
+        }
+        textureArray = newTextureArray;
+        EditorUtility.SetDirty(textureArray);
+        AssetDatabase.SaveAssets();
+    }
+
     private void ResetFields()
     {
         textureArray = null;
@@ -168,10 +212,11 @@ public class TextureArrayWizard : EditorWindow
         textureFormat = TextureFormat.RGBA32;
         textures = null;
 
-        // reset the whole util... 
         EditorUtility.SetDirty(this);
         Repaint();
     }
+
+
 }
 
 
