@@ -5,6 +5,7 @@ using UnityEditor;
 //By C.S. Woodward in 2022, prepared for public use in 2024. 
 //Version 1.65, added scroll for array members and some cosmetic branding changes as I wanted to figure out how to do them
 //future features will include member reordering, size forcing, further parameters to textures, normal map array settings. 
+
 public class TextureArrayWizard : EditorWindow
 {
     private Texture2DArray textureArray; // the texture array... 
@@ -15,7 +16,7 @@ public class TextureArrayWizard : EditorWindow
     private Texture2D[] textures; //textures from the textureArray
     private Vector2 scrollPos;
     private Texture2D bigShoeHeader;
-    private Texture2D parameterImg; 
+    private Texture2D parameterImg;
 
     [MenuItem("Tools/Big Shoe Development Suite/Texture Array Wizard")]
     public static void ShowWindow()
@@ -32,7 +33,6 @@ public class TextureArrayWizard : EditorWindow
 
     private void OnGUI()
     {
-        
         GUIStyle imageStyle = new GUIStyle();
         imageStyle.margin = new RectOffset(0, 0, 0, 0);
         imageStyle.padding = new RectOffset(0, 0, 0, 0);
@@ -53,25 +53,35 @@ public class TextureArrayWizard : EditorWindow
         textureHeight = EditorGUILayout.IntField("Texture Height", textureHeight);
         textureFormat = (TextureFormat)EditorGUILayout.EnumPopup("Texture Format", textureFormat);
 
-        
         GUI.backgroundColor = new Color32(48, 211, 223, 255);
         if (GUILayout.Button("Create New Texture2DArray"))
         {
             CreateNewTexture2DArray();
         }
 
-        
         GUI.backgroundColor = Color.white;
 
         GUILayout.Label("Load Existing Texture2DArray", EditorStyles.boldLabel);
-        textureArray = (Texture2DArray)EditorGUILayout.ObjectField("Texture2DArray", textureArray, typeof(Texture2DArray), false);
+        var newTextureArray = (Texture2DArray)EditorGUILayout.ObjectField("Texture2DArray", textureArray, typeof(Texture2DArray), false);
 
-        if (textureArray != null)
+        if (newTextureArray != textureArray)
         {
-            size = textureArray.depth;
-            textureWidth = textureArray.width;
-            textureHeight = textureArray.height;
-            textureFormat = textureArray.format;
+            textureArray = newTextureArray;
+            if (textureArray != null)
+            {
+                size = textureArray.depth;
+                textureWidth = textureArray.width;
+                textureHeight = textureArray.height;
+                textureFormat = textureArray.format;
+
+                textures = new Texture2D[size];
+                for (int i = 0; i < size; i++)
+                {
+                    //do a copy from texture array... 
+                    textures[i] = new Texture2D(textureWidth, textureHeight, textureFormat, false);
+                    Graphics.CopyTexture(textureArray, i, textures[i], 0);
+                }
+            }
         }
 
         if (textureArray != null)
@@ -88,27 +98,23 @@ public class TextureArrayWizard : EditorWindow
             }
             EditorGUILayout.EndScrollView();
 
-            
             GUI.backgroundColor = Color.cyan;
             if (GUILayout.Button("Apply Textures"))
             {
                 ApplyTextures();
             }
 
-           
             GUI.backgroundColor = Color.white;
         }
 
         GUILayout.Space(20);
 
-       
         GUI.backgroundColor = Color.red;
         if (GUILayout.Button("Reset"))
         {
             ResetFields();
         }
 
-        
         GUI.backgroundColor = Color.white;
     }
 
@@ -145,10 +151,10 @@ public class TextureArrayWizard : EditorWindow
     private void SetTextureReadable(Texture2D texture)
     {
         string path = AssetDatabase.GetAssetPath(texture);
-        TextureImporter shrimporter = (TextureImporter)AssetImporter.GetAtPath(path);
-        if (shrimporter != null)
+        TextureImporter importer = (TextureImporter)AssetImporter.GetAtPath(path);
+        if (importer != null)
         {
-            shrimporter.isReadable = true;
+            importer.isReadable = true;
             AssetDatabase.ImportAsset(path);
         }
     }
