@@ -149,17 +149,21 @@ public class TextureArrayWizard : EditorWindow
         Repaint();
     }
 
-   private void ApplyTextures()
+ private void ApplyTextures()
 {
     for (int i = 0; i < textures.Length; i++)
     {
         if (textures[i] != null)
         {
             SetTextureReadable(textures[i]);
-            if (textures[i].format != textureFormat)
+            if (textures[i].format != textureFormat || textures[i].mipmapCount != textureArray.mipmapCount)
             {
-                Texture2D tempTexture = new Texture2D(textures[i].width, textures[i].height, textureFormat, false);
+                Texture2D tempTexture = new Texture2D(textures[i].width, textures[i].height, textureFormat, textureArray.mipmapCount > 1);
                 Graphics.CopyTexture(textures[i], 0, tempTexture, 0);
+                for (int mip = 1; mip < textureArray.mipmapCount; mip++)
+                {
+                    Graphics.CopyTexture(textures[i], mip, tempTexture, mip);
+                }
                 Graphics.CopyTexture(tempTexture, 0, textureArray, i);
                 DestroyImmediate(tempTexture); // Clean up the temporary texture
             }
